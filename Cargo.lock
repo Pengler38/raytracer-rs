@@ -389,6 +389,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "lina"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd6bcbac98c0d736948ab3fca7ca8168f5da30f828d1cdcbd38cfa85bc9330e4"
+dependencies = [
+ "bytemuck",
+ "num-traits",
+]
+
+[[package]]
 name = "log"
 version = "0.4.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -704,6 +714,7 @@ name = "raytracing-rs"
 version = "0.1.0"
 dependencies = [
  "image",
+ "lina",
 ]
 
 [[package]]
