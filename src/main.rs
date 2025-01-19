@@ -1,18 +1,15 @@
 use image::{Rgb, RgbImage};
-use lina::{vec3, Vec3f};
+
+pub mod math;
+use crate::math::*;
 
 struct ImageConfig {
     dimensions: (u32, u32),
-    fov: (u32, u32),
+    fov: (f32, f32),
 }
 
-struct Sphere {
-    loc: Vec3f,
-    radius: f32,
-}
-
-struct Shapes {
-    spheres: Vec<Sphere>,
+struct Shapes<'a> {
+    spheres: &'a[Sphere],
     //TODO Add Tri
 }
 
@@ -21,21 +18,20 @@ fn main() {
     //      Potentially use ChShersh's CCL?
     let config = ImageConfig {
         dimensions: (640, 480),
-        fov: (120, 90),
+        fov: (90.0, 67.5),
     };
 
     let shapes = Shapes {
-        spheres: vec![Sphere {
-            loc: vec3(0.0, 0.0, 1.0),
+        spheres: &[Sphere {
+            pos: vec3(0.0, 0.0, 1.0),
             radius: 0.5,
+        },
+        Sphere {
+            pos: vec3(0.5, 0.5, 1.0),
+            radius: 0.1,
         }],
     };
     _ = render(config, shapes).save("./img.png");
-}
-
-struct Ray {
-    loc: Vec3f,
-    dir: Vec3f,
 }
 
 fn render(config: ImageConfig, shapes: Shapes) -> RgbImage {
@@ -56,16 +52,38 @@ fn render(config: ImageConfig, shapes: Shapes) -> RgbImage {
     img
 }
 
+//Gets a specific pixel's ray, according to resolution and FOV
 fn get_ray(config: &ImageConfig, x: u32, y: u32) -> Ray {
-    //TODO Implement
+    let (x_fov, y_fov) = config.fov;
+    let (width, height) = config.dimensions;
+    let x_axis = vec3(1.0, 0.0, 0.0);
+    let y_axis = vec3(0.0, 1.0, 0.0);
+
+    let x_rot_step = x_fov / width as f32;
+    let y_rot_step = y_fov / height as f32;
+    let x_rot = radians( x as f32 * x_rot_step 
+        - x_rot_step * (width as f32 / 2.0) 
+        + x_rot_step / 2.0);
+    let y_rot = radians( y as f32 * y_rot_step 
+        - y_rot_step * (height as f32 / 2.0)
+        + y_rot_step / 2.0);
+
+    let ray_dir_x_rot = rotate_vec3(&vec3(0.0, 0.0, 1.0), x_rot, &y_axis);
+    let ray_dir = rotate_vec3(&ray_dir_x_rot, y_rot, &x_axis);
+
     Ray {
-        loc: vec3(0.0, 0.0, 0.0),
-        dir: vec3(0.0, 0.0, 0.0),
+        pos: vec3(0.0, 0.0, 0.0),
+        dir: ray_dir,
     }
 }
 
 fn raytrace(r: Ray, shapes: &Shapes) -> Rgb<u8> {
-    //TODO Implement
+    for s in shapes.spheres {
+        match ray_sphere_intersect(&r, s) {
+            Some(_intersections) => return Rgb([255, 0, 0]),
+            None => continue,
+        }
+    }
     Rgb([0, 0, 0])
 }
 
