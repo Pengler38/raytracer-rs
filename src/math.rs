@@ -34,35 +34,13 @@ pub fn square<T> (x: T) -> T where
 
 //Outputs the length to the closest raysphere intersect
 pub fn ray_sphere_intersect(r: &Ray, s: &Sphere) -> Option<f32> {
-    //From https://raytracing.github.io/books/RayTracingInOneWeekend.html#addingasphere/ray-sphereintersection
-    /*let pos_diff = r.pos - s.pos;
-    let a = glm::dot(&r.dir, &r.dir);
-    let b = -2.0 * glm::dot(&r.dir, &pos_diff);
-    let c = glm::dot(&pos_diff, &pos_diff) - square(s.radius);
-    let discriminant = square(b) - 4.0 * a * c;
-
-    if discriminant < 0.0 {
-        None
-    } else {
-        Some((-b - discriminant.sqrt()) / (2.0*a))
-    }*/
-
-
-    // from raytracer-c back in college.
-
     let pos_diff = r.pos - s.pos;
-    let denominator = glm::dot(&r.dir, &r.dir);
+    let a = glm::dot(&r.dir, &r.dir);
+    let h = glm::dot(&r.dir, &pos_diff);
+    let c = glm::dot(&pos_diff, &pos_diff) - square(s.radius);
 
-    let radical = square(glm::dot(&r.dir, &pos_diff)) - glm::dot(&r.dir, &r.dir) * 
-        (glm::dot(&pos_diff, &pos_diff) - square(s.radius));
+    let discriminant = square(h) - a*c;
+    if discriminant < 0.0 || a == 0.0 { return None }
 
-    if radical < 0.0 || denominator == 0.0 { return None }
-
-    let zerovector = vec3(0.0, 0.0, 0.0);
-    let top_left = glm::dot(&(zerovector - r.dir), &pos_diff);
-
-    let ret = (top_left - radical.sqrt()) / denominator;
-    //let ret_2 = (top_left + radical.sqrt()) / denominator; //Furthest intersection
-
-    Some(ret)
+    Some((h - discriminant.sqrt()) / a)
 }
