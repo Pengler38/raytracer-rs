@@ -23,6 +23,10 @@ pub fn radians(degrees: f32) -> f32 {
     degrees * pi / 180.0
 }
 
+pub fn normalize(v: &Vec3) -> Vec3 {
+    glm::normalize(&v)
+}
+
 pub fn rotate_vec3(v: &Vec3, r: f32, axis: &Vec3) -> Vec3 {
     glm::rotate_vec3(v, r, axis)
 }
@@ -34,7 +38,7 @@ pub fn square<T> (x: T) -> T where
 
 //Outputs the length to the closest raysphere intersect
 pub fn ray_sphere_intersect(r: &Ray, s: &Sphere) -> Option<f32> {
-    let pos_diff = r.pos - s.pos;
+    let pos_diff = s.pos - r.pos;
     let a = glm::dot(&r.dir, &r.dir);
     let h = glm::dot(&r.dir, &pos_diff);
     let c = glm::dot(&pos_diff, &pos_diff) - square(s.radius);

@@ -8,8 +8,13 @@ struct ImageConfig {
     fov: (f32, f32),
 }
 
+enum Mat{
+    Normal(),
+    Color(Rgb<u8>),
+}
+
 struct Shapes<'a> {
-    spheres: &'a[Sphere],
+    spheres: &'a[(Sphere, Mat)],
     //TODO Add Tri
 }
 
@@ -22,14 +27,20 @@ fn main() {
     };
 
     let shapes = Shapes {
-        spheres: &[Sphere {
-            pos: vec3(0.0, 0.0, 1.0),
-            radius: 0.5,
-        },
-        Sphere {
-            pos: vec3(0.5, 0.5, 1.0),
-            radius: 0.1,
-        }],
+        spheres: &[
+            (Sphere {
+                pos: vec3(0.0, 0.0, 1.0),
+                radius: 0.5,
+            }, Mat::Normal()),
+            (Sphere {
+                pos: vec3(-0.5, -0.5, 1.0),
+                radius: 0.1,
+            }, Mat::Normal()),
+            (Sphere {
+                pos: vec3(0.5, 0.5, 1.0),
+                radius: 0.1,
+            }, Mat::Normal()),
+        ],
     };
     _ = render(config, shapes).save("./img.png");
 }
@@ -79,12 +90,29 @@ fn get_ray(config: &ImageConfig, x: u32, y: u32) -> Ray {
 
 fn raytrace(r: Ray, shapes: &Shapes) -> Rgb<u8> {
     for s in shapes.spheres {
-        match ray_sphere_intersect(&r, s) {
-            Some(_intersections) => return Rgb([255, 0, 0]),
+        match ray_sphere_intersect(&r, &s.0) {
+            Some(intersection) => match &s.1 {
+                Mat::Normal() => return vec_to_color(s.0.pos - point_from_ray(&r, intersection)),
+                Mat::Color(rgb) => return *rgb,
+            },
             None => continue,
         }
     }
     Rgb([0, 0, 0])
+}
+
+fn point_from_ray(r: &Ray, t: f32) -> Vec3 {
+    (t * r.dir) + r.pos
+}
+
+fn vec_to_color(v: Vec3) -> Rgb<u8> {
+    let v2 = 0.5 * normalize(&v) + vec3(0.5, 0.5, 0.5);
+    vec3_to_rgb(v2)
+}
+
+fn vec3_to_rgb(v: Vec3) -> Rgb<u8> {
+    let v2 = 255.0 * v;
+    Rgb([v2.x as u8, v2.y as u8, v2.z as u8])
 }
 
 fn _hello_world_image(x: u8, y: u8) -> Rgb<u8> {
