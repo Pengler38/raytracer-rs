@@ -29,15 +29,15 @@ fn main() {
     let shapes = Shapes {
         spheres: &[
             (Sphere {
-                pos: vec3(0.0, 0.0, 1.0),
+                pos: vec3(0.0, 0.0, -1.0),
                 radius: 0.5,
             }, Mat::Normal()),
             (Sphere {
-                pos: vec3(-0.5, -0.5, 1.0),
+                pos: vec3(-0.5, -0.5, -1.0),
                 radius: 0.1,
             }, Mat::Normal()),
             (Sphere {
-                pos: vec3(0.5, 0.5, 1.0),
+                pos: vec3(0.5, 0.5, -1.0),
                 radius: 0.1,
             }, Mat::Normal()),
         ],
@@ -79,8 +79,8 @@ fn get_ray(config: &ImageConfig, x: u32, y: u32) -> Ray {
         - y_rot_step * (height as f32 / 2.0)
         + y_rot_step / 2.0);
 
-    let ray_dir_x_rot = rotate_vec3(&vec3(0.0, 0.0, 1.0), x_rot, &y_axis);
-    let ray_dir = rotate_vec3(&ray_dir_x_rot, y_rot, &x_axis);
+    let ray_dir_x_rot = rotate_vec3(&vec3(0.0, 0.0, -1.0), -1.0 * x_rot, &y_axis);
+    let ray_dir = rotate_vec3(&ray_dir_x_rot, -1.0 * y_rot, &x_axis);
 
     Ray {
         pos: vec3(0.0, 0.0, 0.0),
@@ -92,7 +92,7 @@ fn raytrace(r: Ray, shapes: &Shapes) -> Rgb<u8> {
     for s in shapes.spheres {
         match ray_sphere_intersect(&r, &s.0) {
             Some(intersection) => match &s.1 {
-                Mat::Normal() => return vec_to_color(s.0.pos - point_from_ray(&r, intersection)),
+                Mat::Normal() => return vec_to_color(point_from_ray(&r, intersection) - s.0.pos),
                 Mat::Color(rgb) => return *rgb,
             },
             None => continue,
