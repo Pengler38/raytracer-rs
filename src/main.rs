@@ -5,12 +5,17 @@ use crate::math::*;
 
 struct ImageConfig {
     dimensions: (u32, u32),
-    fov: (f32, f32),
+    view: View,
 }
 
 enum Mat{
     Normal(),
     Color(Rgb<u8>),
+}
+
+enum View{
+    Perspective(f32, f32),
+    Parallel(f32, f32),
 }
 
 struct Shapes<'a> {
@@ -23,7 +28,7 @@ fn main() {
     //      Potentially use ChShersh's CCL?
     let config = ImageConfig {
         dimensions: (640, 480),
-        fov: (90.0, 67.5),
+        view: View::Perspective(90.0, 67.5),
     };
 
     let shapes = Shapes {
@@ -65,26 +70,39 @@ fn render(config: ImageConfig, shapes: Shapes) -> RgbImage {
 
 //Gets a specific pixel's ray, according to resolution and FOV
 fn get_ray(config: &ImageConfig, x: u32, y: u32) -> Ray {
-    let (x_fov, y_fov) = config.fov;
-    let (width, height) = config.dimensions;
-    let x_axis = vec3(1.0, 0.0, 0.0);
-    let y_axis = vec3(0.0, 1.0, 0.0);
+    let get_ray_persp = |x_fov, y_fov| -> Ray {
 
-    let x_rot_step = x_fov / width as f32;
-    let y_rot_step = y_fov / height as f32;
-    let x_rot = radians( x as f32 * x_rot_step 
-        - x_rot_step * (width as f32 / 2.0) 
-        + x_rot_step / 2.0);
-    let y_rot = radians( y as f32 * y_rot_step 
-        - y_rot_step * (height as f32 / 2.0)
-        + y_rot_step / 2.0);
+        let (width, height) = config.dimensions;
+        let x_axis = vec3(1.0, 0.0, 0.0);
+        let y_axis = vec3(0.0, 1.0, 0.0);
 
-    let ray_dir_x_rot = rotate_vec3(&vec3(0.0, 0.0, -1.0), -1.0 * x_rot, &y_axis);
-    let ray_dir = rotate_vec3(&ray_dir_x_rot, -1.0 * y_rot, &x_axis);
+        let top_left = rotate_vec3(
+            &rotate_vec3(&vec3(0.0, 0.0, -1.0), radians(y_fov / 2.0), &x_axis),
+            radians(x_fov / 2.0), &y_axis);
 
-    Ray {
-        pos: vec3(0.0, 0.0, 0.0),
-        dir: ray_dir,
+        let x_step = (-2.0 * top_left.x) / width as f32;
+        let y_step = (-2.0 * top_left.y) / height as f32;
+        let ray_dir = top_left + 
+            vec3((x as f32 + 0.5)*x_step, 0.0, 0.0) +
+            vec3(0.0, (y as f32 + 0.5)*y_step, 0.0);
+
+        Ray {
+            pos: vec3(0.0, 0.0, 0.0),
+            dir: normalize(&ray_dir),
+        }
+    };
+
+    let get_ray_parallel = |view_x, view_y| -> Ray {
+        //TODO implement
+        Ray {
+            pos: vec3(0.0, 0.0, 0.0),
+            dir: vec3(0.0, 0.0, 0.0),
+        }
+    };
+
+    match config.view {
+        View::Parallel(view_x, view_y) => get_ray_parallel(view_x, view_y),
+        View::Perspective(xfov, yfov) => get_ray_persp(xfov, yfov),
     }
 }
 

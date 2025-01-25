@@ -2,8 +2,10 @@ use std::f32::consts;
 use nalgebra_glm as glm;
 use std::ops::Mul;
 pub use nalgebra_glm::vec3;
+pub use nalgebra_glm::vec2;
 
 pub type Vec3 = glm::TVec3<f32>;
+pub type Vec2 = glm::TVec2<f32>;
 
 
 #[derive(Debug)]
