@@ -28,7 +28,8 @@ fn main() {
     //      Potentially use ChShersh's CCL?
     let config = ImageConfig {
         dimensions: (640, 480),
-        view: View::Perspective(90.0, 67.5),
+        view: View::Parallel(2.0, 1.5),
+        //view: View::Perspective(90.0, 67.5),
     };
 
     let shapes = Shapes {
@@ -93,10 +94,14 @@ fn get_ray(config: &ImageConfig, x: u32, y: u32) -> Ray {
     };
 
     let get_ray_parallel = |view_x, view_y| -> Ray {
-        //TODO implement
+        let (width, height) = config.dimensions;
+        let x_step = view_x / width as f32;
+        let y_step = view_y / height as f32;
+        let final_x = (-0.5 * view_x) + (x as f32 + 0.5) * x_step;
+        let final_y = (0.5 * view_y) - (y as f32 + 0.5) * y_step;
         Ray {
-            pos: vec3(0.0, 0.0, 0.0),
-            dir: vec3(0.0, 0.0, 0.0),
+            pos: vec3(final_x, final_y, 0.0),
+            dir: vec3(0.0, 0.0, -1.0),
         }
     };
 
