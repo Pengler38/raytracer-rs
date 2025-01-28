@@ -28,22 +28,22 @@ fn main() {
     //      Potentially use ChShersh's CCL?
     let config = ImageConfig {
         dimensions: (640, 480),
-        view: View::Parallel(2.0, 1.5),
-        //view: View::Perspective(90.0, 67.5),
+        //view: View::Parallel(2.0, 1.5),
+        view: View::Perspective(90.0, 67.5),
     };
 
     let shapes = Shapes {
         spheres: &[
             (Sphere {
-                pos: vec3(0.0, 0.0, -1.0),
+                pos: vec3(0.0, 0.0, -2.0),
                 radius: 0.5,
             }, Mat::Normal()),
             (Sphere {
-                pos: vec3(-0.5, -0.5, -1.0),
+                pos: vec3(-0.5, -0.5, -2.0),
                 radius: 0.1,
             }, Mat::Normal()),
             (Sphere {
-                pos: vec3(0.5, 0.5, -1.0),
+                pos: vec3(0.5, 0.5, -2.0),
                 radius: 0.1,
             }, Mat::Normal()),
         ],
@@ -77,9 +77,9 @@ fn get_ray(config: &ImageConfig, x: u32, y: u32) -> Ray {
         let x_axis = vec3(1.0, 0.0, 0.0);
         let y_axis = vec3(0.0, 1.0, 0.0);
 
-        let top_left = rotate_vec3(
-            &rotate_vec3(&vec3(0.0, 0.0, -1.0), radians(y_fov / 2.0), &x_axis),
-            radians(x_fov / 2.0), &y_axis);
+        let top_left =
+            rotate_vec3( &vec3(0.0, 0.0, -1.0), radians(y_fov / 2.0), &x_axis) +
+            rotate_vec3( &vec3(0.0, 0.0, -1.0), radians(x_fov / 2.0), &y_axis);
 
         let x_step = (-2.0 * top_left.x) / width as f32;
         let y_step = (-2.0 * top_left.y) / height as f32;
