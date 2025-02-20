@@ -37,11 +37,13 @@ impl Shape {
     }
 }
 
+const ANTI_ALIAS_FACTOR: u32 = 2;
+
 fn main() {
     //TODO: Later make the config and shapes read in from a config file.
     //      Potentially use ChShersh's CCL?
     let config = ImageConfig {
-        dimensions: (640, 480),
+        dimensions: (640 * ANTI_ALIAS_FACTOR, 480 * ANTI_ALIAS_FACTOR),
         //view: View::Parallel(2.0, 1.5),
         view: View::Perspective(90.0, 67.5),
     };
@@ -103,7 +105,7 @@ fn render(config: ImageConfig, shapes: Vec<Shape>) -> RgbImage {
         }
         progress(y, height);
     }
-    img
+    anti_alias_downscale(img)
 }
 
 //Gets a specific pixel's ray, according to resolution and FOV
@@ -171,6 +173,37 @@ fn raytrace(r: Ray, shapes: &[Shape]) -> Rgb<u8> {
         },
         Material::Color(rgb) => rgb,
     }
+}
+
+fn anti_alias_downscale(img: RgbImage) -> RgbImage {
+    let factor = ANTI_ALIAS_FACTOR;
+
+    let width = img.width() / factor;
+    let height = img.height() / factor;
+    let mut downscaled_img = RgbImage::new(width, height);
+    for x in 0..width {
+        for y in 0..height {
+            let pix = //TODO This array needs to be made programmatically according to the
+                      //ANTI_ALIAS_FACTOR if I want to be able to change that on the fly
+                [img.get_pixel(factor*x, factor*y).0,
+                img.get_pixel(factor*x, factor*y+1).0,
+                img.get_pixel(factor*x+1, factor*y+1).0,
+                img.get_pixel(factor*x+1, factor*y).0];
+            let combined_pixel: (u32, u32, u32) = pix.iter()
+                .fold((0, 0, 0), 
+                    |acc, pixel| {
+                        (acc.0 + pixel[0] as u32,
+                        acc.1 + pixel[1] as u32,
+                        acc.2 + pixel[2] as u32)
+                    });
+            let average_pixel = Rgb([
+                (combined_pixel.0 / 4) as u8, 
+                (combined_pixel.1 / 4) as u8,
+                (combined_pixel.2 / 4) as u8]);
+            downscaled_img.put_pixel(x, y, average_pixel);
+        }
+    }
+    downscaled_img
 }
 
 fn point_from_ray(r: &Ray, t: f32) -> Vec3 {
