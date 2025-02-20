@@ -8,19 +8,33 @@ struct ImageConfig {
     view: View,
 }
 
-enum Mat{
+enum Material {
     Normal(),
     Color(Rgb<u8>),
 }
 
-enum View{
+enum View {
     Perspective(f32, f32),
     Parallel(f32, f32),
 }
 
-struct Shapes<'a> {
-    spheres: &'a[(Sphere, Mat)],
-    //TODO Add Tri
+enum Geometry {
+    Sphere(math::Sphere),
+    Triangle(math::Triangle),
+}
+
+struct Shape {
+    mat: Material,
+    geo: Geometry,
+}
+
+impl Shape {
+    fn intersect(&self, r: &Ray) -> Option<f32> {
+        match &self.geo {
+            Geometry::Sphere(sphere) => ray_sphere_intersect(r, sphere),
+            Geometry::Triangle(tri) => ray_triangle_intersect(r, tri),
+        }
+    }
 }
 
 fn main() {
@@ -32,26 +46,49 @@ fn main() {
         view: View::Perspective(90.0, 67.5),
     };
 
-    let shapes = Shapes {
-        spheres: &[
-            (Sphere {
-                pos: vec3(0.0, 0.0, -2.0),
+    let shapes = vec![
+        Shape {
+            geo: Geometry::Sphere(Sphere {
+                pos: math::vec3(0.0, 0.0, -2.0),
                 radius: 0.5,
-            }, Mat::Normal()),
-            (Sphere {
-                pos: vec3(-0.5, -0.5, -2.0),
+            }),
+            mat: Material::Normal(),
+        },
+        Shape {
+            geo: Geometry::Sphere(Sphere {
+                pos: math::vec3(-0.5, -0.5, -2.0),
                 radius: 0.1,
-            }, Mat::Normal()),
-            (Sphere {
-                pos: vec3(0.5, 0.5, -2.0),
+            }),
+            mat: Material::Normal(),
+        },
+        Shape {
+            geo: Geometry::Sphere(Sphere {
+                pos: math::vec3(0.5, 0.5, -2.0),
                 radius: 0.1,
-            }, Mat::Normal()),
-        ],
-    };
+            }),
+            mat: Material::Normal(),
+        },
+        Shape {
+            geo: Geometry::Triangle(Triangle(
+                         vec3(-0.5, 0.6, -2.0),
+                         vec3(-0.3, 0.0, -1.5),
+                         vec3(-0.1, 0.6, -2.0),
+                 )),
+            mat: Material::Color(Rgb([255, 100, 100])),
+        },
+        Shape {
+            geo: Geometry::Triangle(Triangle(
+                         vec3(0.5, -0.6, -2.0),
+                         vec3(0.3, 0.0, -1.5),
+                         vec3(0.1, -0.6, -2.0),
+                 )),
+            mat: Material::Color(Rgb([100, 150, 255])),
+        },
+    ];
     _ = render(config, shapes).save("./img.png");
 }
 
-fn render(config: ImageConfig, shapes: Shapes) -> RgbImage {
+fn render(config: ImageConfig, shapes: Vec<Shape>) -> RgbImage {
     fn progress(prog: u32, total: u32) {
         let progress: f64 = 100.0 * prog as f64 / (total - 1) as f64;
         eprint!("\rProgress: {0:.2}%", progress);
@@ -111,17 +148,29 @@ fn get_ray(config: &ImageConfig, x: u32, y: u32) -> Ray {
     }
 }
 
-fn raytrace(r: Ray, shapes: &Shapes) -> Rgb<u8> {
-    for s in shapes.spheres {
-        match ray_sphere_intersect(&r, &s.0) {
-            Some(intersection) => match &s.1 {
-                Mat::Normal() => return vec_to_color(point_from_ray(&r, intersection) - s.0.pos),
-                Mat::Color(rgb) => return *rgb,
-            },
-            None => continue,
+
+fn raytrace(r: Ray, shapes: &[Shape]) -> Rgb<u8> {
+    let mut intersections = Vec::<(f32, &Shape)>::new();
+    for s in shapes.iter() {
+        if let Some(intersection) = s.intersect(&r) {
+            intersections.push((intersection, &s));
         }
     }
-    Rgb([0, 0, 0])
+    //Find the first shape hit
+    let Some((first_intersection, first_shape)) = intersections.into_iter() 
+        .min_by(|(a, _), (b, _)| a.total_cmp(b))
+    else {
+        //No shape found, early return a black pixel
+        return Rgb([0, 0, 0])
+    };
+
+    match first_shape.mat {
+        Material::Normal() => match &first_shape.geo {
+            Geometry::Sphere(sphere) => vec_to_color(point_from_ray(&r, first_intersection) - sphere.pos),
+            Geometry::Triangle(_) => todo!(),
+        },
+        Material::Color(rgb) => rgb,
+    }
 }
 
 fn point_from_ray(r: &Ray, t: f32) -> Vec3 {

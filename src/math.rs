@@ -20,6 +20,9 @@ pub struct Sphere {
     pub radius: f32,
 }
 
+#[derive(Debug)]
+pub struct Triangle(pub Vec3, pub Vec3, pub Vec3);
+
 pub fn radians(degrees: f32) -> f32 {
     let pi: f32 = consts::PI;
     degrees * pi / 180.0
@@ -49,4 +52,42 @@ pub fn ray_sphere_intersect(r: &Ray, s: &Sphere) -> Option<f32> {
     if discriminant < 0.0 || a == 0.0 { return None }
 
     Some((h - discriminant.sqrt()) / a)
+}
+
+//I will make/find a cleaner translation of the ray-tri intersection formula someday
+//But today is not this day
+pub fn ray_triangle_intersect(r: &Ray, tri: &Triangle) -> Option<f32> {
+    let a = tri.0.x - tri.1.x;
+    let b = tri.0.y - tri.1.y;
+    let c = tri.0.z - tri.1.z;
+
+    let d = tri.0.x - tri.2.x;
+    let e = tri.0.y - tri.2.y;
+    let f = tri.0.z - tri.2.z;
+
+    let (g, h, i) = (r.dir.x, r.dir.y, r.dir.z);
+
+    let j = tri.0.x - r.pos.x;
+    let k = tri.0.y - r.pos.y;
+    let l = tri.0.z - r.pos.z;
+
+    let m = a*(e*i - h*f) + b*(g*f - d*i) + c*(d*h - e*g);
+    //If m == 0, the ray direction is parallel to tri's plane. No intersection
+    if m == 0.0 { 
+        return None; 
+    }
+
+    //Calculate beta and gamma, ensuring that the values mean the ray hits the triangle 
+    let beta = (j*(e*i - h*f) + k*(g*f - d*i) + l*(d*h - e*g)) / m;
+    if beta > 1.0 || beta < 0.0 {
+        return None;
+    }
+
+    let gamma = (i*(a*k - j*b) + h*(j*c - a*l) + g*(b*l - k*c)) / m;
+    if gamma < 0.0 || gamma + beta > 1.0 {
+        return None;
+    }
+
+    //The ray hits the triangle, calculate the distance to the intersection 
+    Some( -1.0 * (f*(a*k - j*b) + e*(j*c - a*l) + d*(b*l - k*c)) / m )
 }
